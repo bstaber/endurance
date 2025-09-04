@@ -6,6 +6,13 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
+[manifest]
+members = [
+    "dummy-app",
+    "dummy-lib",
+    "endurance",
+]
+
 [[package]]
 name = "aiobotocore"
 version = "2.24.1"
@@ -303,6 +310,16 @@ sdist = { url = "https://files.pythonhosted.org/packages/25/71/80cc718ff6d7abfba
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/d5/c5db1ea3394c6e1732fb3286b3bd878b59507a8f77d32a2cebda7d7b7cd4/donfig-0.8.1.post1-py3-none-any.whl", hash = "sha256:2a3175ce74a06109ff9307d90a230f81215cbac9a751f4d1c6194644b8204f9d", size = 21592, upload-time = "2024-05-23T14:13:55.283Z" },
 ]
+
+[[package]]
+name = "dummy-app"
+version = "0.1.0"
+source = { virtual = "apps/dummy-app" }
+
+[[package]]
+name = "dummy-lib"
+version = "0.1.0"
+source = { editable = "libs/dummy-lib" }
 
 [[package]]
 name = "endurance"
