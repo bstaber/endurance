@@ -1,0 +1,64 @@
+[project]
+name = "endurance"
+version = "0.1.0"
+description = "Welcome to Enduance"
+readme = "README.md"
+authors = [
+    { name = "Brian Staber", email = "brian.staber@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "nvidia-physicsnemo>=1.2.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "apps/*", 
+    "libs/*",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "htmlmin2>=0.1.13",
+    "mkdocs>=1.6.1",
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-include-markdown-plugin>=7.1.7",
+    "mkdocs-literate-nav>=0.6.2",
+    "mkdocs-material>=9.6.18",
+    "mkdocs-section-index>=0.3.10",
+    "mkdocstrings[python]>=0.30.0",
+    "pre-commit>=4.3.0",
+    "pyright>=1.1.405",
+    "pytest>=8.4.1",
+    "ruff>=0.12.11",
+]
+
+[tool.ruff]
+line-length = 88
+exclude = ["doc", "benchmark"]
+
+[tool.ruff.lint]
+select = [
+  "D",
+  "E", "W",
+  "F",
+  "ARG",
+  "I",
+]
+ignore = [
+  "E501",
+  "F821", # jaxtyping
+  "F722",  # jaxtyping
+  "D107" # missing docstring in __init__
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"*tests/*" = ["D", "S101"]
+"__init__.py" = ["D104", "F401"]

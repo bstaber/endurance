@@ -1,0 +1,73 @@
+site_name: endurance
+repo_url: https://github.com/bstaber/endurance
+docs_dir: docs
+
+theme:
+  name: material
+  font:
+    text: PT Sans
+    code: Fira Mono
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.path
+    - navigation.footer
+    - navigation.top
+    # - navigation.indexes
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - content.code.copy
+    - content.code.annotate
+    # - toc.integrate
+    # - toc.follow
+    - search.highlight
+    - search.share
+    - search.suggest
+    - announce.dismiss
+
+plugins:
+- search
+- include-markdown
+- gen-files:
+    scripts:
+      - docs/scripts/generate_pages.py
+- literate-nav:
+    nav_file: reference/SUMMARY.md
+- mkdocstrings:
+    handlers:
+      python:
+        paths: ["src/endurance"]
+        options:
+          docstring_style: google
+          show_source: true
+          members_order: source
+          inherited_members: true
+          show_source: false
+          show_root_heading: false
+          show_root_toc_entry: false
+          allow_inspection: false
+          docstring_style: "google"
+          docstring_section_style: "list"
+          merge_init_into_class: true
+          separate_signature: true
+          docstring_options:
+            ignore_init_summary: true
+- section-index
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  # - Getting started:
+  #     - Install: home/install.md
+  #     - Quick start: home/quick_start.md
+  #     - Paper: home/paper.md
+  # - API: reference/
+  # - Examples:
+  #     - MMD quantization: examples/mmd_quantization.md
+  #     - Stein thinning: examples/stein_thinning.md
