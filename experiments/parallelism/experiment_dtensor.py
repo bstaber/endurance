@@ -9,6 +9,7 @@ from torch.distributed.tensor import Replicate, Shard, distribute_tensor
 
 
 def main():
+    """Example that creates a mesh of devices, distribute a tensor, and perform some basic operations."""
     backend = (
         "nccl"
         if torch.cuda.is_available() and torch.cuda.device_count() > 1

@@ -9,7 +9,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 def main():
-    """Main body."""
+    """Example that uses DDP to perform data parallelism during training."""
     backend = (
         "nccl"
         if torch.cuda.is_available() and torch.cuda.device_count() > 1
@@ -18,7 +18,7 @@ def main():
     dist.init_process_group(backend=backend)
 
     rank = dist.get_rank()
-    world_size = dist.get_world_size()
+    _world_size = dist.get_world_size()
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
 
     if backend == "nccl":
@@ -37,7 +37,7 @@ def main():
     opt = torch.optim.SGD(ddp_model.parameters(), lr=0.01)
     loss_fn = nn.MSELoss()
 
-    torch.manual_seed(1234 + rank)
+    _ = torch.manual_seed(1234 + rank)
     for step in range(5):
         x = torch.randn(32, 10, device=device)
         target = torch.randn(32, 1, device=device)

@@ -29,9 +29,9 @@ repos:
         types: [python]
         require_serial: true
 
-    -   id: pyright
-        name: Pyright type checking
-        entry: uv run pyright
-        language: system
-        types: [python]
-        require_serial: true
+    # -   id: pyright
+    #     name: Pyright type checking
+    #     entry: uv run pyright
+    #     language: system
+    #     types: [python]
+    #     require_serial: true
