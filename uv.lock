@@ -327,6 +327,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "nvidia-physicsnemo" },
+    { name = "warp-lang" },
 ]
 
 [package.dev-dependencies]
@@ -346,7 +347,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "nvidia-physicsnemo", specifier = ">=1.2.0" }]
+requires-dist = [
+    { name = "nvidia-physicsnemo", specifier = ">=1.2.0" },
+    { name = "warp-lang", specifier = ">=1.9.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1781,6 +1785,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1c/14/37fcdba2808a6c615681cd216fecae00413c9dab44fb2e57805ecf3eaee3/virtualenv-20.34.0.tar.gz", hash = "sha256:44815b2c9dee7ed86e387b842a84f20b93f7f417f95886ca1996a72a4138eb1a", size = 6003808, upload-time = "2025-08-13T14:24:07.464Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/06/04c8e804f813cf972e3262f3f8584c232de64f0cde9f703b46cf53a45090/virtualenv-20.34.0-py3-none-any.whl", hash = "sha256:341f5afa7eee943e4984a9207c025feedd768baff6753cd660c857ceb3e36026", size = 5983279, upload-time = "2025-08-13T14:24:05.111Z" },
+]
+
+[[package]]
+name = "warp-lang"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/f2/ddbc9e267a80cd00aac4ac583d2a50137399d258460b43e4e28c6f2d9d02/warp_lang-1.9.0-py3-none-macosx_10_13_universal2.whl", hash = "sha256:aba4db82cdbb883eb9ed174f2c60373e2c406fac6d2de92604d77137f0d91e4a", size = 45391962, upload-time = "2025-09-05T03:48:58.834Z" },
+    { url = "https://files.pythonhosted.org/packages/af/7a/b62d0cf817557690036827016fb376585d25d9435ba9de0fca44cde49478/warp_lang-1.9.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:23165d3291eeecc5ac47b9a3de0b93d34b4c921414e5a761ab96d68861efa3cb", size = 126903237, upload-time = "2025-09-05T03:49:04.059Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/5d/2292760c05378e328e92b7aaff0e9b4fcdc1286e2d0bb5c1a11f19bf06d3/warp_lang-1.9.0-py3-none-manylinux_2_34_aarch64.whl", hash = "sha256:7ea8057e5d6fdb9b0885d725b51954c5fc6dac62d6ac007828148b1cb13ee615", size = 129390902, upload-time = "2025-09-05T03:49:09.714Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/4b/0d29687c5b5ac9430098f3e928e0b0d05b78cd82c4bda86ad51a9c3bae03/warp_lang-1.9.0-py3-none-win_amd64.whl", hash = "sha256:484f8507d2c053151fc148deca9ba54fb32ff17d8c5d53e9fab8bf03d4c3430e", size = 109184293, upload-time = "2025-09-05T03:49:15.338Z" },
 ]
 
 [[package]]
