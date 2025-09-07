@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "nvidia-physicsnemo>=1.2.0",
+    "torch>=2.8.0",
     "warp-lang>=1.9.0",
 ]
 
@@ -20,6 +21,7 @@ members = [
 
 [tool.uv.sources]
 "dummy-lib" = { workspace = true }
+"mini-rnn" = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
