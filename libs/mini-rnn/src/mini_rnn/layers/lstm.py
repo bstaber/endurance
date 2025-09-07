@@ -7,6 +7,23 @@ import torch.nn as nn
 class LSTMLayer(nn.Module):
     """A minimal LSTM cell implemented from scratch.
 
+    The LSTM adds a new vector, the cell state (c_t), to help mitigate vanishing gradients,
+    and that represents long-term memory.
+
+    The usual hidden state (h_t) now represents short-term memory.
+
+    At each step, we decide;
+        - what to forget from the previous cell state (forget gate, f_t)
+        - what new information to add (input gate, i_t and cell candidate, g_t)
+        - what to output (output gate, o_t)
+
+    The cell state is updated as:
+        c_t = f_t ⊙ c_{t-1} + i_t ⊙ g_t
+
+    The hidden state is then:
+        h_t = o_t ⊙ tanh(c_t)
+
+
     Equations (per time step):
         [i, f, g, o] = x_t @ W_x^T + h_{t-1} @ W_h^T + b_x + b_h
         i_t = sigmoid(i)                      (input gate)
