@@ -45,7 +45,9 @@ class SimpleRNN(nn.Module):
             h = x.new_zeros(B, H)
         else:
             if h0.shape != (B, H):
-                raise ValueError(f"h0 must have shape (B, H)=({B}, {H}), got {tuple(h0.shape)}")
+                raise ValueError(
+                    f"h0 must have shape (B, H)=({B}, {H}), got {tuple(h0.shape)}"
+                )
             if h0.device != x.device or h0.dtype != x.dtype:
                 h0 = h0.to(device=x.device, dtype=x.dtype)
             h = h0
@@ -53,8 +55,8 @@ class SimpleRNN(nn.Module):
         if return_all_outputs:
             Y = x.new_empty(B, T, out_size)
             for t in range(T):
-                h = self.cell(x[:, t, :], h)     # (B, H)
-                Y[:, t, :] = self.out(h)         # (B, O)
+                h = self.cell(x[:, t, :], h)  # (B, H)
+                Y[:, t, :] = self.out(h)  # (B, O)
             return Y, h
         else:
             last_y = torch.empty(B, out_size)
