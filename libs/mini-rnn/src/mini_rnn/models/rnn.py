@@ -11,9 +11,17 @@ from mini_rnn.layers.rnn import RNNLayer
 class SimpleRNN(nn.Module):
     """Unrolled RNN with an output head."""
 
-    def __init__(self, input_size: int, hidden_size: int, output_size: int) -> None:
-        super().__init__()
-        self.cell = RNNLayer(input_size, hidden_size)
+    def __init__(
+        self, input_size: int, hidden_size: int, output_size: int, num_layers: int
+    ) -> None:
+        super().__init__()  # pyright: ignore[reportUnknownMemberType]
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        layers: list[RNNLayer] = []
+        for i in range(num_layers):
+            in_size = input_size if i == 0 else hidden_size
+            layers.append(RNNLayer(in_size, hidden_size))
+        self.layers = nn.ModuleList(layers)
         self.out = nn.Linear(hidden_size, output_size)
 
     def forward(
@@ -21,12 +29,12 @@ class SimpleRNN(nn.Module):
         x: torch.Tensor,
         h0: Optional[torch.Tensor] = None,
         return_all_outputs: bool = True,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    ) -> torch.Tensor:
         """Forward method.
 
         Args:
-            x: Tensor of shape (B, T, input_size)
-            h0: Tensor of shape (B, hidden_size) or None -> zeros
+            x: Input sequence given as a tensor of shape (B, T, input_size)
+            h0: Initial hidden state given as a tensor of shape (B, hidden_size) or None -> zeros
             return_all_outputs: Returns the outputs at all time steps if True
 
         Returns:
@@ -35,12 +43,12 @@ class SimpleRNN(nn.Module):
             h_T: (B, hidden_size)
         """
         B, T, _ = x.shape
-        H = self.cell.hidden_size
-        out_size = self.out.out_features
+        H, out_size = self.hidden_size, self.out.out_features
 
         if T == 0:
             raise ValueError("SimpleRNN received a sequence with T=0.")
 
+        # Get initial hidden state
         if h0 is None:
             h = x.new_zeros(B, H)
         else:
@@ -55,12 +63,18 @@ class SimpleRNN(nn.Module):
         if return_all_outputs:
             Y = x.new_empty(B, T, out_size)
             for t in range(T):
-                h = self.cell(x[:, t, :], h)  # (B, H)
-                Y[:, t, :] = self.out(h)  # (B, O)
-            return Y, h
+                inp = x[:, t, :]
+                for cell in self.layers:
+                    h = cell(inp, h)
+                    inp = h
+                Y[:, t, :] = self.out(inp)
+            return Y
         else:
-            last_y = torch.empty(B, out_size)
+            last_y = x.new_empty(B, out_size)
             for t in range(T):
-                h = self.cell(x[:, t, :], h)
-                last_y = self.out(h)
-            return last_y, h
+                inp = x[:, t, :]
+                for cell in self.layers:
+                    h = cell(inp, h)
+                    inp = h
+                last_y = self.out(inp)
+            return last_y

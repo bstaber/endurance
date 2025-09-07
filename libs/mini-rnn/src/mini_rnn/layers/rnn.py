@@ -41,4 +41,4 @@ class RNNLayer(nn.Module):
         Returns:
             h_t: (B, hidden_size)
         """
-        return torch.tanh(self.Wx @ x_t + self.Wh @ h_prev + self.bh)
+        return torch.tanh(x_t @ self.Wx.T + h_prev @ self.Wh.T + self.bh)
