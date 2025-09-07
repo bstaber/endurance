@@ -1,0 +1,27 @@
+# Default Hydra config for the RNN trainer
+
+model:
+  _target_: mini_rnn.models.rnn.SimpleRNN
+  input_size: 32
+  hidden_size: 64
+  output_size: 32
+  num_layers: 2
+
+loss:
+  _target_: torch.nn.MSELoss
+
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 1e-3
+  weight_decay: 0.0
+
+data:
+  input_size: ${model.input_size}
+  seq_len: 100
+  batch_size: 64
+  num_batches: 100
+
+trainer:
+  epochs: 5
+  device: cuda
+  save_path: null

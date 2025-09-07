@@ -1,5 +1,5 @@
 [project]
-name = "dummy-lib"
+name = "mini-rnn"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
