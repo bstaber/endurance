@@ -52,7 +52,9 @@ class LSTMLayer(nn.Module):
             self.b_x[H : 2 * H].fill_(1.0)
             self.b_h[H : 2 * H].fill_(1.0)
 
-    def forward(self, x_t: torch.Tensor, h_prev: torch.Tensor, c_prev: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x_t: torch.Tensor, h_prev: torch.Tensor, c_prev: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass for a single time step.
 
         Args:

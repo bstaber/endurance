@@ -57,7 +57,7 @@ class SimpleLSTM(nn.Module):
             (h_T, c_T): final hidden and cell states for all layers, each of shape (B, L, H)
         """
         B, T, _ = x.shape
-        L, H, O = self.num_layers, self.hidden_size, self.out.out_features
+        L, H, out_size = self.num_layers, self.hidden_size, self.out.out_features
         if T == 0:
             raise ValueError("SimpleLSTM received a sequence with T=0.")
 
@@ -70,30 +70,30 @@ class SimpleLSTM(nn.Module):
                 )
             if state.device != x.device or state.dtype != x.dtype:
                 state = state.to(device=x.device, dtype=x.dtype)
-            return [state[:, l, :] for l in range(L)]
+            return [state[:, l_index, :] for l_index in range(L)]
 
         h_list = _prep(h0)
         c_list = _prep(c0)
 
         if return_all_outputs:
-            Y = x.new_empty(B, T, O)
+            Y = x.new_empty(B, T, out_size)
             for t in range(T):
                 inp = x[:, t, :]
-                for l, cell in enumerate(self.layers):
-                    h_new, c_new = cell(inp, h_list[l], c_list[l])
-                    h_list[l], c_list[l] = h_new, c_new
+                for l_index, cell in enumerate(self.layers):
+                    h_new, c_new = cell(inp, h_list[l_index], c_list[l_index])
+                    h_list[l_index], c_list[l_index] = h_new, c_new
                     inp = h_new
                 Y[:, t, :] = self.out(inp)
             h_T = torch.stack(h_list, dim=1)  # (B, L, H)
             c_T = torch.stack(c_list, dim=1)  # (B, L, H)
             return Y, (h_T, c_T)
         else:
-            last_y = x.new_empty(B, O)
+            last_y = x.new_empty(B, out_size)
             for t in range(T):
                 inp = x[:, t, :]
-                for l, cell in enumerate(self.layers):
-                    h_new, c_new = cell(inp, h_list[l], c_list[l])
-                    h_list[l], c_list[l] = h_new, c_new
+                for l_index, cell in enumerate(self.layers):
+                    h_new, c_new = cell(inp, h_list[l_index], c_list[l_index])
+                    h_list[l_index], c_list[l_index] = h_new, c_new
                     inp = h_new
                 last_y = self.out(inp)
             h_T = torch.stack(h_list, dim=1)
