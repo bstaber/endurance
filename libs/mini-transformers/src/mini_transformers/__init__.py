@@ -1,2 +1,1 @@
-def hello() -> str:
-    return "Hello from mini-transformers!"
+"""Mini transformers attention layers and blocks."""
