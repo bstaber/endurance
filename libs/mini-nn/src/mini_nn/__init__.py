@@ -1,2 +1,1 @@
-def hello() -> str:
-    return "Hello from mini-nn!"
+"""Minimal PyTorch models for fun."""
