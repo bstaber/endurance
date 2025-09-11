@@ -13,6 +13,7 @@ members = [
     "dummy-lib",
     "endurance",
     "mini-neural-operators",
+    "mini-nn",
     "mini-rnn",
     "mini-transformers",
 ]
@@ -1050,6 +1051,11 @@ wheels = [
 name = "mini-neural-operators"
 version = "0.1.0"
 source = { editable = "libs/mini-neural-operators" }
+
+[[package]]
+name = "mini-nn"
+version = "0.1.0"
+source = { editable = "libs/mini-nn" }
 
 [[package]]
 name = "mini-rnn"
