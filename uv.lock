@@ -15,6 +15,7 @@ members = [
     "mini-neural-operators",
     "mini-nn",
     "mini-rnn",
+    "mini-torch-mcmc",
     "mini-transformers",
 ]
 
@@ -1061,6 +1062,11 @@ source = { editable = "libs/mini-nn" }
 name = "mini-rnn"
 version = "0.1.0"
 source = { editable = "libs/mini-rnn" }
+
+[[package]]
+name = "mini-torch-mcmc"
+version = "0.1.0"
+source = { editable = "libs/mini-torch-mcmc" }
 
 [[package]]
 name = "mini-transformers"
