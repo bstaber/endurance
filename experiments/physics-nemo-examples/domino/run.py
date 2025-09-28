@@ -125,6 +125,13 @@ Practical tips
   encode_parameters / geometry_encoding_type).
 """
 
+# /// script
+# dependencies = [
+#   "pyplaid<=1.0.0",
+# ]
+# ///
+
+
 import numpy as np
 import pyvista as pv
 import torch
