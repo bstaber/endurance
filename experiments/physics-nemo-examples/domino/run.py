@@ -31,7 +31,7 @@ Notes:
   need to exist in the current reference implementation).
 - PCA/alignment of the surface before building the grid tightens the box and
   reduces wasted voxels.
-  
+
 Inputs: tensors and how they map to the paper
 ---------------------------------------------
 
@@ -142,6 +142,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 config = OmegaConf.load("config.yaml")
 config = OmegaConf.to_container(config.model, resolve=True)
 
+
 def pca_rotate_nodes(
     nodes: np.ndarray,
 ):
@@ -153,7 +154,7 @@ def pca_rotate_nodes(
     X = nodes - c
 
     C = np.cov(X, rowvar=False)
-    vals, vecs = np.linalg.eigh(C)      
+    vals, vecs = np.linalg.eigh(C)
     order = np.argsort(vals)[::-1]
     R = vecs[:, order]
 
@@ -165,34 +166,30 @@ def pca_rotate_nodes(
     return nodes_rot
 
 
-def make_bbox_grid_from_minmax(surf_min_max: torch.Tensor, nx: int, ny: int, nz: int, device=None):
-    """
-    surf_min_max: (B, 2, 3) from your input_dict["surface_min_max"]
-    returns:
-      surf_grid: (B, nx, ny, nz, 3)
-    """
+def make_bbox_grid_from_minmax(
+    surf_min_max: torch.Tensor, nx: int, ny: int, nz: int, device=None
+):
+    """Build a regular grid of shape (B, nx, ny, nz, 3) inside the bounding box defined by surf_min_max."""
     B = surf_min_max.shape[0]
     dev = device if device is not None else surf_min_max.device
-    mins = surf_min_max[:, 0]    # (B, 3)
-    maxs = surf_min_max[:, 1]    # (B, 3)
+    mins = surf_min_max[:, 0]  # (B, 3)
+    maxs = surf_min_max[:, 1]  # (B, 3)
 
     # build per-batch grids
     grids = []
     for b in range(B):
-        xs = torch.linspace(mins[b,0], maxs[b,0], nx, device=dev)
-        ys = torch.linspace(mins[b,1], maxs[b,1], ny, device=dev)
-        zs = torch.linspace(mins[b,2], maxs[b,2], nz, device=dev)
+        xs = torch.linspace(mins[b, 0], maxs[b, 0], nx, device=dev)
+        ys = torch.linspace(mins[b, 1], maxs[b, 1], ny, device=dev)
+        zs = torch.linspace(mins[b, 2], maxs[b, 2], nz, device=dev)
         X, Y, Z = torch.meshgrid(xs, ys, zs, indexing="ij")  # (nx,ny,nz)
-        G = torch.stack([X, Y, Z], dim=-1)                   # (nx,ny,nz,3)
+        G = torch.stack([X, Y, Z], dim=-1)  # (nx,ny,nz,3)
         grids.append(G)
-    surf_grid = torch.stack(grids, dim=0)                    # (B,nx,ny,nz,3)
+    surf_grid = torch.stack(grids, dim=0)  # (B,nx,ny,nz,3)
     return surf_grid
 
+
 def pos_from_center_of_mass(centers: torch.Tensor) -> torch.Tensor:
-    """
-    centers: (B, N, 3)
-    returns COM->point vectors, same shape (B, N, 3)
-    """
+    """Center-of-mass position basis feature."""
     com = centers.mean(dim=1, keepdim=True)  # (B,1,3)
     return centers - com
 
@@ -206,18 +203,23 @@ def build_domino_surface_from_pyvista(
     include_normals: bool = True,
     include_areas: bool = True,
     device: str = "cuda:0",
-    dtype_torch = torch.float32,
+    dtype_torch=torch.float32,
 ):
+    """Build a DoMINO surface from a PyVista mesh."""
     q = quads.astype(np.int64, copy=False)
     if q.min() == 1:
         q = q - 1
 
-    faces = np.hstack([np.full((q.shape[0], 1), 4, dtype=np.int64), q]).ravel()  # [4, i0, i1, i2, i3] ...
+    faces = np.hstack(
+        [np.full((q.shape[0], 1), 4, dtype=np.int64), q]
+    ).ravel()  # [4, i0, i1, i2, i3] ...
     mesh = pv.PolyData(nodes, faces)
     mesh = mesh.clean()
 
     # Normals: both point & cell (auto_orient gives consistent directions)
-    mesh = mesh.compute_normals(point_normals=True, cell_normals=True, auto_orient_normals=True)
+    mesh = mesh.compute_normals(
+        point_normals=True, cell_normals=True, auto_orient_normals=True
+    )
     # Cell areas:
     mesh = mesh.compute_cell_sizes(length=False, area=True, volume=False)
     # Cell centers:
@@ -225,58 +227,74 @@ def build_domino_surface_from_pyvista(
 
     # ---- Choose representation (what DoMINO will see as "centers") ----
     if representation == "vertex":
-        centers_np = np.asarray(mesh.points)                 # (N,3)
+        centers_np = np.asarray(mesh.points)  # (N,3)
         if include_normals:
-            normals_np = np.asarray(mesh.point_data["Normals"])       # (N,3)
+            normals_np = np.asarray(mesh.point_data["Normals"])  # (N,3)
         if include_areas:
             # convert cell areas to per-vertex area = sum(face_area/4) for incident quads
             areas_np = np.zeros(centers_np.shape[0], dtype=float)
-            quad_idx = mesh.faces.reshape(-1, 5)[:, 1:]               # (M,4)
-            cell_area = np.asarray(mesh.cell_data["Area"])            # (M,)
+            quad_idx = mesh.faces.reshape(-1, 5)[:, 1:]  # (M,4)
+            cell_area = np.asarray(mesh.cell_data["Area"])  # (M,)
             for i in range(quad_idx.shape[0]):
                 areas_np[quad_idx[i]] += cell_area[i] * 0.25
     elif representation == "face":
-        centers_np = cell_centers                                     # (M,3)
+        centers_np = cell_centers  # (M,3)
         if include_normals:
-            normals_np = np.asarray(mesh.cell_data["Normals"])        # (M,3)
+            normals_np = np.asarray(mesh.cell_data["Normals"])  # (M,3)
         if include_areas:
-            areas_np = np.asarray(mesh.cell_data["Area"])             # (M,)
+            areas_np = np.asarray(mesh.cell_data["Area"])  # (M,)
     else:
         raise ValueError("representation must be 'vertex' or 'face'")
 
     # ---- KNN neighbors on chosen centers ----
     tree = cKDTree(centers_np)
     _, idx = tree.query(centers_np, k=k_neighbors + 1)  # include self
-    idx = idx[:, 1:]                                        # drop self
-    neighbors_np = centers_np[idx]                          # (Ns,K,3)
+    idx = idx[:, 1:]  # drop self
+    neighbors_np = centers_np[idx]  # (Ns,K,3)
 
     # ---- Torchify + DoMINO keys ----
     dev = torch.device(device)
-    centers = torch.as_tensor(centers_np, dtype=dtype_torch, device=dev)[None, ...]      # (1,Ns,3)
-    neighbors = torch.as_tensor(neighbors_np, dtype=dtype_torch, device=dev)[None, ...]  # (1,Ns,K,3)
+    centers = torch.as_tensor(centers_np, dtype=dtype_torch, device=dev)[
+        None, ...
+    ]  # (1,Ns,3)
+    neighbors = torch.as_tensor(neighbors_np, dtype=dtype_torch, device=dev)[
+        None, ...
+    ]  # (1,Ns,K,3)
 
     input_dict = {
         "surface_mesh_centers": centers,
         "surface_mesh_neighbors": neighbors,
-        "geometry_coordinates": centers,    # DoMINO.forward expects this
+        "geometry_coordinates": centers,  # DoMINO.forward expects this
     }
 
     if include_normals:
-        surf_normals = torch.as_tensor(normals_np, dtype=dtype_torch, device=dev)[None, ...]      # (1,Ns,3)
-        neigh_normals = torch.as_tensor(normals_np[idx], dtype=dtype_torch, device=dev)[None, ...]# (1,Ns,K,3)
-        input_dict.update({
-            "surface_normals": surf_normals,
-            "surface_neighbors_normals": neigh_normals,
-        })
+        surf_normals = torch.as_tensor(normals_np, dtype=dtype_torch, device=dev)[
+            None, ...
+        ]  # (1,Ns,3)
+        neigh_normals = torch.as_tensor(normals_np[idx], dtype=dtype_torch, device=dev)[
+            None, ...
+        ]  # (1,Ns,K,3)
+        input_dict.update(
+            {
+                "surface_normals": surf_normals,
+                "surface_neighbors_normals": neigh_normals,
+            }
+        )
 
     if include_areas:
         areas_np = np.maximum(areas_np, 1e-12)  # strictly positive
-        surf_areas  = torch.as_tensor(areas_np, dtype=dtype_torch, device=dev)[None, ...]         # (1,Ns)
-        neigh_areas = torch.as_tensor(areas_np[idx], dtype=dtype_torch, device=dev)[None, ...]    # (1,Ns,K)
-        input_dict.update({
-            "surface_areas": surf_areas,
-            "surface_neighbors_areas": neigh_areas,
-        })
+        surf_areas = torch.as_tensor(areas_np, dtype=dtype_torch, device=dev)[
+            None, ...
+        ]  # (1,Ns)
+        neigh_areas = torch.as_tensor(areas_np[idx], dtype=dtype_torch, device=dev)[
+            None, ...
+        ]  # (1,Ns,K)
+        input_dict.update(
+            {
+                "surface_areas": surf_areas,
+                "surface_neighbors_areas": neigh_areas,
+            }
+        )
 
     mins = centers.min(dim=1).values
     maxs = centers.max(dim=1).values
@@ -334,8 +352,12 @@ input_dict["pos_surface_center_of_mass"] = pos_from_center_of_mass(
 
 # 4) global params placeholders: forward() reads them even if encode_parameters=False
 G = 2  # matches DoMINO default global_features
-input_dict["global_params_values"] = torch.zeros((1, G, 1), dtype=torch.float32, device=device)
-input_dict["global_params_reference"] = torch.ones((1, G, 1), dtype=torch.float32, device=device)
+input_dict["global_params_values"] = torch.zeros(
+    (1, G, 1), dtype=torch.float32, device=device
+)
+input_dict["global_params_reference"] = torch.ones(
+    (1, G, 1), dtype=torch.float32, device=device
+)
 
 for key, value in input_dict.items():
     print(f"{key}: {value.shape} {value.dtype} {value.device}")

@@ -1,3 +1,5 @@
+"""Minimal example of using FIGConvUNet on a PLAID dataset."""
+
 import torch
 from datasets import load_dataset
 from physicsnemo.models.figconvnet.figconvunet import FIGConvUNet

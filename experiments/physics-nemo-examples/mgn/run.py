@@ -1,3 +1,5 @@
+"""Minimal example of using MeshGraphNet and MeshGraphKAN on a PLAID dataset."""
+
 from datasets import load_dataset
 from physicsnemo.models.meshgraphnet import (
     MeshGraphKAN,
