@@ -131,7 +131,6 @@ Practical tips
 # ]
 # ///
 
-
 import numpy as np
 import pyvista as pv
 import torch
