@@ -1,0 +1,75 @@
+model:
+  model_type: surface
+  activation: relu
+  loss_function:
+    loss_type: mse
+    area_weighing_factor: 10000
+  interp_res: [32, 16, 16]
+  use_sdf_in_basis_func: false
+  positional_encoding: false
+  volume_points_sample: 8192
+  surface_points_sample: 8192
+  surface_sampling_algorithm: area_weighted
+  geom_points_sample: 300000
+  num_neighbors_surface: 7
+  num_neighbors_volume: 10
+  combine_volume_surface: false
+  return_volume_neighbors: true
+  use_surface_normals: true
+  use_surface_area: true
+  integral_loss_scaling_factor: 100
+  normalization: min_max_scaling
+  encode_parameters: false
+  surf_loss_scaling: 5.0
+  vol_loss_scaling: 1.0
+  geometry_encoding_type: stl
+  solution_calculation_mode: two-loop
+  resampling_surface_mesh:
+    resample: false
+    points: 1000000
+  geometry_rep:
+    geo_conv:
+      base_neurons: 32
+      base_neurons_in: 1
+      base_neurons_out: 1
+      volume_radii: [0.1, 0.5, 1.0, 2.5]
+      surface_radii: [0.01, 0.05, 1.0]
+      surface_hops: 1
+      volume_hops: 1
+      volume_neighbors_in_radius: [10, 10, 10, 10]
+      surface_neighbors_in_radius: [10, 10, 10]
+      fourier_features: false
+      num_modes: 5
+      activation: relu
+    geo_processor:
+      base_filters: 8
+      activation: relu
+      processor_type: conv
+      self_attention: false
+      cross_attention: false
+  nn_basis_functions:
+    base_layer: 512
+    fourier_features: true
+    num_modes: 5
+    activation: relu
+  local_point_conv:
+    activation: relu
+  aggregation_model:
+    base_layer: 512
+    activation: relu
+  position_encoder:
+    base_neurons: 512
+    activation: relu
+    fourier_features: true
+    num_modes: 5
+  geometry_local:
+    volume_neighbors_in_radius: [64, 128]
+    surface_neighbors_in_radius: [32, 128]
+    volume_radii: [0.1, 0.25]
+    surface_radii: [0.05, 0.25]
+    base_layer: 512
+  parameter_model:
+    base_layer: 512
+    fourier_features: false
+    num_modes: 5
+    activation: relu
