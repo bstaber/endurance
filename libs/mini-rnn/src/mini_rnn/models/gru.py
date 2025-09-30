@@ -47,9 +47,14 @@ class SimpleGRU(nn.Module):
 
         Args:
             x: input sequence, shape (B, T, input_size)
-            h0: initial hidden states, shape (B, hidden_size)
+            h0: initial hidden states, shape (B, H) for layer 0 only,
+                or (num_layers, B, H); None -> zeros
             return_all_outputs: if True, return outputs for all time steps,
                                 else return only the last output.
+
+        Returns:
+            Y: (B, T, output_size) if return_all_outputs else (B, output_size)
+            # If you also want final hidden states, see comment at the end.
         """
         B, T, _ = x.shape
         H, out_size = self.hidden_size, self.out.out_features
@@ -58,29 +63,40 @@ class SimpleGRU(nn.Module):
             raise ValueError("SimpleGRU received a sequence with T=0.")
 
         if h0 is None:
-            h = x.new_zeros(B, H)
+            h_list = [x.new_zeros(B, H) for _ in range(self.num_layers)]
         else:
-            if h0.shape != (B, H):
-                raise ValueError(f"h0 must have shape (B, {H}), got {tuple(h0.shape)}")
-            if h0.device != x.device or h0.dtype != x.dtype:
-                h0 = h0.to(device=x.device, dtype=x.dtype)
-            h = h0
+            if h0.dim() == 2 and h0.shape == (B, H):
+                h_list = [h0.to(device=x.device, dtype=x.dtype)]
+                h_list += [x.new_zeros(B, H) for _ in range(self.num_layers - 1)]
+            elif h0.dim() == 3 and h0.shape == (self.num_layers, B, H):
+                h_list = [
+                    h0[l_idx].to(device=x.device, dtype=x.dtype)
+                    for l_idx in range(self.num_layers)
+                ]
+            else:
+                raise ValueError(
+                    f"h0 must have shape (B, H)=({B}, {H}) or "
+                    f"({self.num_layers}, B, H)=({self.num_layers}, {B}, {H}), "
+                    f"got {tuple(h0.shape)}"
+                )
 
         if return_all_outputs:
             Y = x.new_empty(B, T, out_size)
             for t in range(T):
                 inp = x[:, t, :]
-                for cell in self.layers:
-                    h = cell(inp, h)  # (B, H)
-                    inp = h
-                Y[:, t, :] = self.out(inp)  # (B, O)
+                for l_idx, cell in enumerate(self.layers):
+                    h_new = cell(inp, h_list[l_idx])  # use layer-l previous hidden
+                    h_list[l_idx] = h_new  # update layer-l hidden
+                    inp = h_new  # feed to next layer
+                Y[:, t, :] = self.out(inp)
             return Y
         else:
             last_y = x.new_empty(B, out_size)
             for t in range(T):
                 inp = x[:, t, :]
-                for cell in self.layers:
-                    h = cell(inp, h)
-                    inp = h
+                for l_idx, cell in enumerate(self.layers):
+                    h_new = cell(inp, h_list[l_idx])
+                    h_list[l_idx] = h_new
+                    inp = h_new
                 last_y = self.out(inp)
             return last_y

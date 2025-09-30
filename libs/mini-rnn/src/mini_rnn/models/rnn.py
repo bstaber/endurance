@@ -33,14 +33,14 @@ class SimpleRNN(nn.Module):
         """Forward method.
 
         Args:
-            x: Input sequence given as a tensor of shape (B, T, input_size)
-            h0: Initial hidden state given as a tensor of shape (B, hidden_size) or None -> zeros
-            return_all_outputs: Returns the outputs at all time steps if True
+            x: (B, T, input_size)
+            h0: (B, H) for layer 0 only, or (num_layers, B, H); None -> zeros
+            return_all_outputs: if True returns outputs at all time steps
 
         Returns:
-            (Y, h_T):
             Y: (B, T, output_size) if return_all_outputs else (B, output_size)
-            h_T: (B, hidden_size)
+            # NOTE: Your docstring mentioned returning h_T as well, but this
+            # function currently returns only Y. If you want h_T, see comment below.
         """
         B, T, _ = x.shape
         H, out_size = self.hidden_size, self.out.out_features
@@ -48,33 +48,42 @@ class SimpleRNN(nn.Module):
         if T == 0:
             raise ValueError("SimpleRNN received a sequence with T=0.")
 
-        # Get initial hidden state
         if h0 is None:
-            h = x.new_zeros(B, H)
+            h_list = [x.new_zeros(B, H) for _ in range(self.num_layers)]
         else:
-            if h0.shape != (B, H):
+            if h0.dim() == 2 and h0.shape == (B, H):
+                # apply to layer 0; others zero
+                h_list = [h0.to(device=x.device, dtype=x.dtype)]
+                h_list += [x.new_zeros(B, H) for _ in range(self.num_layers - 1)]
+            elif h0.dim() == 3 and h0.shape == (self.num_layers, B, H):
+                h_list = [
+                    h0[l_idx].to(device=x.device, dtype=x.dtype)
+                    for l_idx in range(self.num_layers)
+                ]
+            else:
                 raise ValueError(
-                    f"h0 must have shape (B, H)=({B}, {H}), got {tuple(h0.shape)}"
+                    f"h0 must have shape (B, H)=({B}, {H}) or "
+                    f"({self.num_layers}, B, H)=({self.num_layers}, {B}, {H}), "
+                    f"got {tuple(h0.shape)}"
                 )
-            if h0.device != x.device or h0.dtype != x.dtype:
-                h0 = h0.to(device=x.device, dtype=x.dtype)
-            h = h0
 
         if return_all_outputs:
             Y = x.new_empty(B, T, out_size)
             for t in range(T):
                 inp = x[:, t, :]
-                for cell in self.layers:
-                    h = cell(inp, h)
-                    inp = h
+                for l_idx, cell in enumerate(self.layers):
+                    h_new = cell(inp, h_list[l_idx])  # use layer-l previous hidden
+                    h_list[l_idx] = h_new  # update layer-l hidden for next time step
+                    inp = h_new  # feed to next layer
                 Y[:, t, :] = self.out(inp)
             return Y
         else:
             last_y = x.new_empty(B, out_size)
             for t in range(T):
                 inp = x[:, t, :]
-                for cell in self.layers:
-                    h = cell(inp, h)
-                    inp = h
+                for l_idx, cell in enumerate(self.layers):
+                    h_new = cell(inp, h_list[l_idx])
+                    h_list[l_idx] = h_new
+                    inp = h_new
                 last_y = self.out(inp)
             return last_y
