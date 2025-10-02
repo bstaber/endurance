@@ -10,6 +10,7 @@ from scipy.spatial.distance import cdist
 
 
 def _pairwise_distances_gemm(X: cp.ndarray) -> cp.ndarray:
+    """Computes pairwise Euclidean distances using GEMM for efficiency."""
     # X: [n, d], float32
     # returns D: [n, n] with Euclidean distances
     sq_norms = cp.sum(X * X, axis=1, keepdims=True)  # [n,1]
@@ -31,6 +32,7 @@ def mmd_subsample_cupy(
     X: NDArray[np.float32] | cp.ndarray,
     size: int,
 ) -> NDArray[np.int64]:
+    """Selects samples in the input table by greedily minimizing the maximum mean discrepancy (MMD)."""
     # Accept NumPy or CuPy X; convert once.
     X_cp = X if isinstance(X, cp.ndarray) else cp.asarray(X, dtype=cp.float32)
     n = X_cp.shape[0]
