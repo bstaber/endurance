@@ -2,7 +2,11 @@
 
 # /// script
 # dependencies = [
-#   "pyplaid<=1.0.0",
+#   "pyplaid<=0.1.8",
+#   "plaid-bridges<=0.1.8",
+#   "torch-geometric==2.6.1",
+#   "torch-scatter==2.1.2+pt28cu129",
+#   "rich",
 # ]
 # ///
 
