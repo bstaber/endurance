@@ -630,7 +630,7 @@ requires-dist = [
     { name = "hetgpy", specifier = ">=1.0.4" },
     { name = "hydra-core", specifier = ">=1.3.2" },
     { name = "nvidia-physicsnemo", specifier = ">=1.2.0" },
-    { name = "plaid-bridges", directory = "../plaid-bridges" },
+    { name = "plaid-bridges", git = "https://github.com/PLAID-lib/plaid-bridges.git" },
     { name = "pyplaid", specifier = ">=0.1.8" },
     { name = "pyqt5", specifier = ">=5.15.11" },
     { name = "pyvista", specifier = ">=0.46.3" },
@@ -2240,32 +2240,13 @@ wheels = [
 
 [[package]]
 name = "plaid-bridges"
-source = { directory = "../plaid-bridges" }
+version = "0.1.9.dev8+g9b952fb88"
+source = { git = "https://github.com/PLAID-lib/plaid-bridges.git#9b952fb883d460adeaa05542c1222b80f70e577c" }
 dependencies = [
     { name = "pyplaid" },
     { name = "torch" },
     { name = "torch-geometric" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "furo", marker = "extra == 'dev'" },
-    { name = "jupytext", marker = "extra == 'dev'" },
-    { name = "myst-nb", marker = "extra == 'dev'" },
-    { name = "myst-parser", marker = "extra == 'dev'" },
-    { name = "plaid-ops", marker = "extra == 'dev'", git = "https://github.com/PLAID-lib/plaid-ops.git?rev=e3c6c49f5681925d76c71ed1a04cda04463502ed" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pyplaid", git = "https://github.com/PLAID-lib/plaid.git?rev=447c8d1fea8a956afe715e2f1ed67ff200bc40bd" },
-    { name = "pyright", extras = ["nodejs"], marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
-    { name = "ruff", marker = "extra == 'dev'" },
-    { name = "sphinx", marker = "extra == 'dev'" },
-    { name = "sphinx-autoapi", marker = "extra == 'dev'" },
-    { name = "torch" },
-    { name = "torch-geometric" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "platformdirs"
@@ -2629,8 +2610,8 @@ wheels = [
 
 [[package]]
 name = "pyplaid"
-version = "0.1.10.dev13+g447c8d1fe"
-source = { git = "https://github.com/PLAID-lib/plaid.git?rev=447c8d1fea8a956afe715e2f1ed67ff200bc40bd#447c8d1fea8a956afe715e2f1ed67ff200bc40bd" }
+version = "0.1.10.dev10+gbb47fbfda"
+source = { git = "https://github.com/PLAID-lib/plaid.git#bb47fbfdabe74dbbbdabcfa253b9fde6170a7f0d" }
 dependencies = [
     { name = "datasets" },
     { name = "matplotlib" },
