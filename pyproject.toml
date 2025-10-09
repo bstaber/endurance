@@ -14,6 +14,7 @@ dependencies = [
     "nvidia-physicsnemo>=1.2.0",
     "plaid-bridges",
     "pyplaid>=0.1.8",
+    "pyqt5>=5.15.11",
     "pyvista>=0.46.3",
     "rich>=14.1.0",
     "scikit-learn>=1.7.2",
