@@ -59,6 +59,11 @@ dev = [
     "ruff>=0.12.11",
 ]
 
+[tool.uv]
+find-links = [
+    "https://data.pyg.org/whl/torch-2.8.0+cu129.html",
+]
+
 [tool.ruff]
 line-length = 88
 exclude = ["doc", "benchmark"]
