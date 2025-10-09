@@ -656,7 +656,7 @@ requires-dist = [
     { name = "the-well", specifier = ">=1.1.0" },
     { name = "torch", specifier = ">=2.8.0" },
     { name = "torch-geometric", specifier = ">=2.6.1" },
-    { name = "torch-scatter", specifier = ">=2.1.2" },
+    { name = "torch-scatter", specifier = "==2.1.2+pt28cu129" },
     { name = "torch-tb-profiler", specifier = ">=0.4.3" },
     { name = "warp-lang", specifier = ">=1.9.0" },
 ]
@@ -3260,9 +3260,16 @@ wheels = [
 
 [[package]]
 name = "torch-scatter"
-version = "2.1.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f5/ab/2a44ecac0f891dd0d765fc59ac8d277c6283a31907626560e72685df2ed6/torch_scatter-2.1.2.tar.gz", hash = "sha256:69b3aa435f2424ac6a1bfb6ff702da6eb73b33ca0db38fb26989c74159258e47", size = 108045, upload-time = "2023-10-06T08:49:07.081Z" }
+version = "2.1.2+pt28cu129"
+source = { registry = "https://data.pyg.org/whl/torch-2.8.0+cu129.html" }
+wheels = [
+    { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu129/torch_scatter-2.1.2%2Bpt28cu129-cp311-cp311-linux_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu129/torch_scatter-2.1.2%2Bpt28cu129-cp311-cp311-win_amd64.whl" },
+    { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu129/torch_scatter-2.1.2%2Bpt28cu129-cp312-cp312-linux_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu129/torch_scatter-2.1.2%2Bpt28cu129-cp312-cp312-win_amd64.whl" },
+    { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu129/torch_scatter-2.1.2%2Bpt28cu129-cp313-cp313-linux_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-2.8.0%2Bcu129/torch_scatter-2.1.2%2Bpt28cu129-cp313-cp313-win_amd64.whl" },
+]
 
 [[package]]
 name = "torch-tb-profiler"
