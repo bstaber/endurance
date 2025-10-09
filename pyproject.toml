@@ -23,7 +23,7 @@ dependencies = [
     "the-well>=1.1.0",
     "torch>=2.8.0",
     "torch-geometric>=2.6.1",
-    "torch-scatter>=2.1.2",
+    "torch-scatter==2.1.2+pt28cu129",
     "torch-tb-profiler>=0.4.3",
     "warp-lang>=1.9.0",
 ]
