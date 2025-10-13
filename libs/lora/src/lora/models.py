@@ -1,7 +1,10 @@
+"""Simple MLP models for LoRA experiments."""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pinn_lora.linear import LoRALinear
+
+from lora.linear import LoRALinear
 
 
 class BaseMLP(nn.Module):

@@ -1,16 +1,17 @@
+"""LoRA applied to Physics-Informed Neural Networks (PINNs) for Burgers' equation."""
+
 import numpy as np
 import scipy
 import torch
 import torch.nn as nn
+from lora.models import BaseMLP, LoRAMLP
 from torch.autograd import grad
 from torch.utils.data import DataLoader, TensorDataset
 
-from lora.models import BaseMLP, LoRAMLP
-
 
 def loss_burgers(
-    model,
-    xs_pde,
+    model: nn.Module,
+    xs_pde: torch.Tensor,
     nu: float = 0.01 / torch.pi,
     x_min: float = 0.0,
     x_max: float = 1.0,
@@ -19,6 +20,7 @@ def loss_burgers(
     n_ic: int = 128,
     n_bc: int = 128,
 ):
+    """Compute the PINN loss for the Burgers' equation."""
     # xs_pde: (B_pde, 2) with requires_grad=True
     xs_pde = xs_pde.requires_grad_(True)
     u = model(xs_pde)  # (B_pde, 1)
