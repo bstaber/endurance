@@ -33,25 +33,25 @@ def main():
     #         print(key, value.shape)
     #     else:
     #         print(key, value)
-    for i in range(200):
-        sample = dataset.__getitem__(i)
-        input_fields = sample["input_fields"]
-        output_fields = sample["output_fields"]
-        plt.figure()
-        plt.imshow(input_fields[0, :, :, 0].numpy())
-        plt.title(f"Input field sample {i}")
-        plt.savefig(f"input_field_sample_{i}.png")
-        plt.close()
+    # for i in range(200):
+    #     sample = dataset.__getitem__(i)
+    #     input_fields = sample["input_fields"]
+    #     output_fields = sample["output_fields"]
+    #     plt.figure()
+    #     plt.imshow(input_fields[0, :, :, 0].numpy())
+    #     plt.title(f"Input field sample {i}")
+    #     plt.savefig(f"input_field_sample_{i}.png")
+    #     plt.close()
 
-    # dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-    # for idx, batch in enumerate(dataloader):
-    #     print("--- Batch", idx, "---")
-    #     for key, value in batch.items():
-    #         if value.ndim > 2:
-    #             print(key, value.shape)
-    #         else:
-    #             print(key, value)
+    for idx, batch in enumerate(dataloader):
+        print("--- Batch", idx, "---")
+        for key, value in batch.items():
+            if value.ndim > 2:
+                print(key, value.shape)
+            else:
+                print(key, value)
 
 
 if __name__ == "__main__":
