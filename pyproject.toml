@@ -28,7 +28,7 @@ dependencies = [
     "torch-scatter==2.1.2+pt28cu129",
     "torch-tb-profiler>=0.4.3",
     "warp-lang>=1.9.0",
-    "timm>=1.0,<2"
+    "timm>=1.0,<2",
 ]
 
 [tool.uv.workspace]
