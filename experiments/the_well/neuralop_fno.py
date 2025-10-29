@@ -45,13 +45,7 @@ def main(cfg: DictConfig):
         batch_size=cfg.dataloader.batch_size,
         data_workers=cfg.dataloader.num_workers,
     )
-    # dataset = WellDataset(
-    #     well_base_path=cfg.dataloader.base_path,
-    #     well_dataset_name=cfg.dataloader.name,
-    #     well_split_name="train",
-    #     n_steps_input=n_steps_input,
-    #     n_steps_output=1,
-    # )
+
     num_fields: int = datamodule.train_dataset.metadata.n_fields
     log.info(f"Number of fields: {num_fields}")
 
