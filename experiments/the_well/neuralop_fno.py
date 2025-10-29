@@ -2,15 +2,14 @@
 
 import logging
 from pathlib import Path
-from time import perf_counter, time
 
 import hydra
+import mlflow
 import torch
-import torch.nn as nn
 from einops import rearrange
+from lr_scheduler import LinearWarmupCosineAnnealingLR
 from neuralop.models.fno import FNO2d
 from omegaconf import DictConfig
-from the_well.benchmark.models import FNO
 from the_well.data import WellDataset
 from torch.profiler import (
     ProfilerActivity,
@@ -37,11 +36,12 @@ def main(cfg: DictConfig):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # --- data ---
+    n_steps_input = 1
     dataset = WellDataset(
         well_base_path=cfg.data.base_path,
         well_dataset_name=cfg.data.name,
         well_split_name="train",
-        n_steps_input=4,
+        n_steps_input=n_steps_input,
         n_steps_output=1,
     )
     num_fields: int = dataset.metadata.n_fields
@@ -49,7 +49,7 @@ def main(cfg: DictConfig):
     log.info(f"Train dataset length: {len(dataset)}")
 
     xs = []
-    for i in range(0, 1000, 100):
+    for i in range(0, 1000, 10):
         x = dataset[i]["input_fields"]
         xs.append(x)
     xs = torch.stack(xs)
@@ -57,7 +57,7 @@ def main(cfg: DictConfig):
     sigma = xs.reshape(-1, num_fields).std(dim=0).to(device)
 
     def _preprocess(x):
-        return (x - mu) / sigma
+        return (x - mu) / (sigma + 1e-5)
 
     dataloader = DataLoader(
         dataset,
@@ -74,7 +74,7 @@ def main(cfg: DictConfig):
         n_modes_height=cfg.model.n_modes_height,
         n_modes_width=cfg.model.n_modes_width,
         hidden_channels=cfg.model.hidden_channels,
-        in_channels=4 * dataset.metadata.n_fields,
+        in_channels=n_steps_input * dataset.metadata.n_fields,
         out_channels=1 * dataset.metadata.n_fields,
     ).to(device)
     # if cfg.trainer.channels_last:
@@ -96,7 +96,9 @@ def main(cfg: DictConfig):
         except Exception as e:
             log.info(f"torch.compile failed: {e}")
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.trainer.lr, weight_decay=1e-4)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=cfg.trainer.lr, weight_decay=1e-4
+    )
 
     # --- amp ---
     use_amp = cfg.trainer.amp and use_cuda
@@ -119,9 +121,8 @@ def main(cfg: DictConfig):
             :, :, :, :256
         ]  # crop to 256 width
 
-        # check nans
-        if torch.isnan(input_fields).any() or torch.isnan(output_fields).any():
-            raise ValueError("NaNs detected in input or output fields.")
+        input_fields = torch.nan_to_num(input_fields)
+        output_fields = torch.nan_to_num(output_fields)
         # if cfg.trainer.channels_last:
         #     input_fields = input_fields.contiguous(memory_format=torch.channels_last)
         #     output_fields = output_fields.contiguous(memory_format=torch.channels_last)
@@ -154,7 +155,7 @@ def main(cfg: DictConfig):
             on_trace_ready=tensorboard_trace_handler(str(tb_dir)),
         ) as prof:
             it = iter(dataloader)
-            for i in range(cfg.trainer.steps):
+            for i in range(cfg.trainer.num_epochs):
                 batch = next(it)
                 loss = train_step(batch)
                 if i % 10 == 0:
@@ -162,20 +163,52 @@ def main(cfg: DictConfig):
                 prof.step()
             torch.cuda.synchronize() if use_cuda else None
     else:
-        log.info("Starting training...")
-        it = iter(dataloader)
-        t0 = time()
-        for i in range(cfg.trainer.steps):
-            batch = next(it)
-            loss = train_step(batch)
-            if i % 10 == 0:
-                log.info(f"{i}: {loss:.6f}")
+        with mlflow.start_run():
+            mlflow.log_params(
+                {
+                    "amp": cfg.trainer.amp,
+                    "batch_size": cfg.data.batch_size,
+                }
+            )
+            # val_dataset = WellDataset(
+            #     well_base_path=cfg.data.base_path,
+            #     well_dataset_name=cfg.data.name,
+            #     well_split_name="valid",
+            #     n_steps_input=4,
+            #     n_steps_output=1,
+            # )
+            # val_dataloader = DataLoader(
+            #     val_dataset,
+            #     batch_size=cfg.data.batch_size,
+            #     shuffle=False,
+            #     pin_memory=True,
+            #     num_workers=cfg.data.num_workers,
+            #     persistent_workers=True,
+            #     prefetch_factor=cfg.data.prefetch_factor,
+            # )
 
-        if use_cuda:
-            torch.cuda.synchronize()
+            scheduler = LinearWarmupCosineAnnealingLR(
+                optimizer,
+                warmup_epochs=10,
+                max_epochs=cfg.trainer.num_epochs,
+                warmup_start_lr=cfg.trainer.lr * 0.001,
+                eta_min=1e-6,
+            )
 
-        t1 = time()
-        log.info(f"Trained {cfg.trainer.steps} steps in {t1 - t0:.2f} seconds.")
+            log.info("Starting training...")
+
+            model.train()
+            for epoch in range(cfg.trainer.num_epochs):
+                train_epoch_loss = 0.0
+                for step, batch in enumerate(dataloader):
+                    loss = train_step(batch)
+                    train_epoch_loss += loss
+                train_epoch_loss /= len(dataloader)
+                log.info(
+                    f"Epoch {epoch + 1}/{cfg.trainer.num_epochs}, Train Loss: {train_epoch_loss:.6f}"
+                )
+                scheduler.step()
+                mlflow.log_metric("train_loss", train_epoch_loss, step=epoch)
 
 
 if __name__ == "__main__":

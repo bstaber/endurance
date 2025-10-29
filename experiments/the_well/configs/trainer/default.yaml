@@ -1,5 +1,5 @@
-steps: 200
-lr: 1e-3
-amp: false               
-compile: false       
-profile: false       
+num_epochs: 200
+lr: 1e-4
+amp: false
+compile: false
+profile: false
