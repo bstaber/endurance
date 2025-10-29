@@ -34,6 +34,10 @@ def main(cfg: DictConfig):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
+    if use_cuda:
+        torch.backends.cudnn.benchmark = True
+        torch.set_float32_matmul_precision("high")
+
     # --- data ---
     n_steps_input = 1
     datamodule = WellDataModule(
