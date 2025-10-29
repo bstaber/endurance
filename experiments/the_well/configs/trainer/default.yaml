@@ -1,0 +1,5 @@
+steps: 200
+lr: 1e-5
+amp: false               
+compile: false       
+profile: false       
