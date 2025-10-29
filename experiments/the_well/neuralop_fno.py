@@ -10,6 +10,7 @@ import torch.nn as nn
 from einops import rearrange
 from neuralop.models.fno import FNO2d
 from omegaconf import DictConfig
+from the_well.benchmark.models import FNO
 from the_well.data import WellDataset
 from torch.profiler import (
     ProfilerActivity,
@@ -118,6 +119,9 @@ def main(cfg: DictConfig):
             :, :, :, :256
         ]  # crop to 256 width
 
+        # check nans
+        if torch.isnan(input_fields).any() or torch.isnan(output_fields).any():
+            raise ValueError("NaNs detected in input or output fields.")
         # if cfg.trainer.channels_last:
         #     input_fields = input_fields.contiguous(memory_format=torch.channels_last)
         #     output_fields = output_fields.contiguous(memory_format=torch.channels_last)
