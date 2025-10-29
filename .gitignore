@@ -11,3 +11,7 @@ wheels/
 outputs
 *.png
 data/
+
+# logs
+mlruns/
+sweeps/
