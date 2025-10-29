@@ -1,5 +1,5 @@
 defaults:
-  - data: default
+  - dataloader: default
   - model: default
   - trainer: default
 

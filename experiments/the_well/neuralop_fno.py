@@ -10,14 +10,13 @@ from einops import rearrange
 from lr_scheduler import LinearWarmupCosineAnnealingLR
 from neuralop.models.fno import FNO2d
 from omegaconf import DictConfig
-from the_well.data import WellDataset
+from the_well.data import WellDataModule
 from torch.profiler import (
     ProfilerActivity,
     profile,
     schedule,
     tensorboard_trace_handler,
 )
-from torch.utils.data import DataLoader
 
 log = logging.getLogger(__name__)
 
@@ -37,45 +36,32 @@ def main(cfg: DictConfig):
 
     # --- data ---
     n_steps_input = 1
-    dataset = WellDataset(
-        well_base_path=cfg.data.base_path,
-        well_dataset_name=cfg.data.name,
-        well_split_name="train",
+    datamodule = WellDataModule(
+        well_base_path=cfg.dataloader.base_path,
+        well_dataset_name=cfg.dataloader.name,
         n_steps_input=n_steps_input,
         n_steps_output=1,
+        use_normalization=True,
+        batch_size=cfg.dataloader.batch_size,
+        data_workers=cfg.dataloader.num_workers,
     )
-    num_fields: int = dataset.metadata.n_fields
+    # dataset = WellDataset(
+    #     well_base_path=cfg.dataloader.base_path,
+    #     well_dataset_name=cfg.dataloader.name,
+    #     well_split_name="train",
+    #     n_steps_input=n_steps_input,
+    #     n_steps_output=1,
+    # )
+    num_fields: int = datamodule.train_dataset.metadata.n_fields
     log.info(f"Number of fields: {num_fields}")
-    log.info(f"Train dataset length: {len(dataset)}")
-
-    xs = []
-    for i in range(0, 1000, 10):
-        x = dataset[i]["input_fields"]
-        xs.append(x)
-    xs = torch.stack(xs)
-    mu = xs.reshape(-1, num_fields).mean(dim=0).to(device)
-    sigma = xs.reshape(-1, num_fields).std(dim=0).to(device)
-
-    def _preprocess(x):
-        return (x - mu) / (sigma + 1e-5)
-
-    dataloader = DataLoader(
-        dataset,
-        batch_size=cfg.data.batch_size,
-        shuffle=True,
-        pin_memory=True,
-        num_workers=cfg.data.num_workers,
-        persistent_workers=True,
-        prefetch_factor=cfg.data.prefetch_factor,
-    )
 
     # --- model ---
     model = FNO2d(
         n_modes_height=cfg.model.n_modes_height,
         n_modes_width=cfg.model.n_modes_width,
         hidden_channels=cfg.model.hidden_channels,
-        in_channels=n_steps_input * dataset.metadata.n_fields,
-        out_channels=1 * dataset.metadata.n_fields,
+        in_channels=n_steps_input * num_fields,
+        out_channels=1 * num_fields,
     ).to(device)
     # if cfg.trainer.channels_last:
     #     model = model.to(memory_format=torch.channels_last)
@@ -87,10 +73,10 @@ def main(cfg: DictConfig):
         try:
             compile_kwargs = dict(
                 backend="inductor",
-                mode="reduce-overhead",  # fewer autotune sweeps than max-autotune
-                fullgraph=False,  # allow graph breaks (critical here)
+                mode="reduce-overhead",
+                fullgraph=False,
                 dynamic=True,
-            )  # handle symbolic shapes better
+            )
 
             model = torch.compile(model, **compile_kwargs)
         except Exception as e:
@@ -107,16 +93,15 @@ def main(cfg: DictConfig):
 
     # --- training step ---
     def train_step(batch):
+        """Single training step."""
         non_blocking = True if use_cuda else False
         # Shape: (batch_size, T_in, H, W, F)
         input_fields = batch["input_fields"].to(device, non_blocking=non_blocking)
-        input_fields = _preprocess(input_fields)
         input_fields = rearrange(input_fields, "b t_in h w f -> b (t_in f) h w")[
             :, :, :, :256
         ]  # crop to 256 width
         # Shape: (batch_size, T_out, H, W, F)
         output_fields = batch["output_fields"].to(device, non_blocking=non_blocking)
-        output_fields = _preprocess(output_fields)
         output_fields = rearrange(output_fields, "b t_out h w f -> b (t_out f) h w")[
             :, :, :, :256
         ]  # crop to 256 width
@@ -143,6 +128,30 @@ def main(cfg: DictConfig):
             optimizer.step()
         return loss.item()
 
+    def val_step(batch):
+        """Validation step."""
+        non_blocking = True if use_cuda else False
+        # Shape: (batch_size, T_in, H, W, F)
+        input_fields = batch["input_fields"].to(device, non_blocking=non_blocking)
+        input_fields = rearrange(input_fields, "b t_in h w f -> b (t_in f) h w")[
+            :, :, :, :256
+        ]  # crop to 256 width
+        # Shape: (batch_size, T_out, H, W, F)
+        output_fields = batch["output_fields"].to(device, non_blocking=non_blocking)
+        output_fields = rearrange(output_fields, "b t_out h w f -> b (t_out f) h w")[
+            :, :, :, :256
+        ]  # crop to 256 width
+
+        input_fields = torch.nan_to_num(input_fields)
+        output_fields = torch.nan_to_num(output_fields)
+
+        with torch.autocast(
+            enabled=use_amp, dtype=amp_dtype, device_type="cuda" if use_cuda else "cpu"
+        ):
+            pred = model(input_fields)
+            loss = torch.nn.functional.mse_loss(pred, output_fields)
+        return loss.item()
+
     if cfg.trainer.profile:
         tb_dir = outdir / "tb_logs"
         tb_dir.mkdir(exist_ok=True, parents=True)
@@ -154,7 +163,7 @@ def main(cfg: DictConfig):
             with_modules=True,
             on_trace_ready=tensorboard_trace_handler(str(tb_dir)),
         ) as prof:
-            it = iter(dataloader)
+            it = iter(datamodule.train_dataloader())
             for i in range(cfg.trainer.num_epochs):
                 batch = next(it)
                 loss = train_step(batch)
@@ -167,48 +176,53 @@ def main(cfg: DictConfig):
             mlflow.log_params(
                 {
                     "amp": cfg.trainer.amp,
-                    "batch_size": cfg.data.batch_size,
+                    "batch_size": cfg.dataloader.batch_size,
+                    "hidden_channels": cfg.model.hidden_channels,
                 }
             )
-            # val_dataset = WellDataset(
-            #     well_base_path=cfg.data.base_path,
-            #     well_dataset_name=cfg.data.name,
-            #     well_split_name="valid",
-            #     n_steps_input=4,
-            #     n_steps_output=1,
-            # )
-            # val_dataloader = DataLoader(
-            #     val_dataset,
-            #     batch_size=cfg.data.batch_size,
-            #     shuffle=False,
-            #     pin_memory=True,
-            #     num_workers=cfg.data.num_workers,
-            #     persistent_workers=True,
-            #     prefetch_factor=cfg.data.prefetch_factor,
-            # )
-
             scheduler = LinearWarmupCosineAnnealingLR(
                 optimizer,
-                warmup_epochs=10,
+                warmup_epochs=3,
                 max_epochs=cfg.trainer.num_epochs,
-                warmup_start_lr=cfg.trainer.lr * 0.001,
+                warmup_start_lr=cfg.trainer.lr * 0.1,
                 eta_min=1e-6,
             )
 
             log.info("Starting training...")
-
-            model.train()
             for epoch in range(cfg.trainer.num_epochs):
+                model.train()
                 train_epoch_loss = 0.0
-                for step, batch in enumerate(dataloader):
+                for batch in datamodule.train_dataloader():
                     loss = train_step(batch)
                     train_epoch_loss += loss
-                train_epoch_loss /= len(dataloader)
+                train_epoch_loss /= len(datamodule.train_dataloader())
                 log.info(
                     f"Epoch {epoch + 1}/{cfg.trainer.num_epochs}, Train Loss: {train_epoch_loss:.6f}"
                 )
                 scheduler.step()
                 mlflow.log_metric("train_loss", train_epoch_loss, step=epoch)
+
+                model.eval()
+                val_epoch_loss = 0.0
+                with torch.no_grad():
+                    for batch in datamodule.val_dataloader():
+                        batch["input_fields"] = (
+                            datamodule.train_dataset.norm.normalize_flattened(
+                                batch["input_fields"], "variable"
+                            )
+                        )
+                        batch["output_fields"] = (
+                            datamodule.train_dataset.norm.normalize_flattened(
+                                batch["output_fields"], "variable"
+                            )
+                        )
+                        loss = val_step(batch)
+                        val_epoch_loss += loss
+                val_epoch_loss /= len(datamodule.val_dataloader())
+                log.info(
+                    f"Epoch {epoch + 1}/{cfg.trainer.num_epochs}, Val Loss: {val_epoch_loss:.6f}"
+                )
+                mlflow.log_metric("val_loss", val_epoch_loss, step=epoch)
 
 
 if __name__ == "__main__":

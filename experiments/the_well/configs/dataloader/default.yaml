@@ -1,0 +1,5 @@
+base_path: "/mnt/c/Users/brian/Downloads/the_well/datasets"
+name: "turbulent_radiative_layer_2D"
+batch_size: 2
+num_workers: 8
+prefetch_factor: 4
