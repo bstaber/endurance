@@ -1,4 +1,5 @@
 """Simple tutorial to read and visualize 2D Darcy Flow data from PDEBench."""
+
 from pathlib import Path
 
 import h5py

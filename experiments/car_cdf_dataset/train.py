@@ -2,8 +2,6 @@
 
 import logging
 
-logging.basicConfig(level=logging.INFO)
-
 import mlflow
 import torch
 import torch.nn.functional as F
@@ -93,14 +91,16 @@ def main():
         latent_feature_channels=1,
     ).to(device)
 
-    logger.info(f"Model has {count_parameters(model)/1e6:.2f} million trainable parameters.")
+    logger.info(
+        f"Model has {count_parameters(model) / 1e6:.2f} million trainable parameters."
+    )
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=5
     )
 
-    num_epochs = 10
+    num_epochs = 20
     mlflow.set_experiment("GINO-CarCFDDataset")
     with mlflow.start_run():
         for epoch in range(num_epochs):
