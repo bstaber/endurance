@@ -8,7 +8,7 @@ import mlflow
 import torch
 from einops import rearrange
 from lr_scheduler import LinearWarmupCosineAnnealingLR
-from neuralop.models.fno import FNO2d
+from neuralop.models.fno import FNO
 from omegaconf import DictConfig
 from the_well.data import WellDataModule
 from torch.profiler import (
@@ -54,9 +54,8 @@ def main(cfg: DictConfig):
     log.info(f"Number of fields: {num_fields}")
 
     # --- model ---
-    model = FNO2d(
-        n_modes_height=cfg.model.n_modes_height,
-        n_modes_width=cfg.model.n_modes_width,
+    model = FNO(
+        n_modes=(cfg.model.n_modes_height, cfg.model.n_modes_width),
         hidden_channels=cfg.model.hidden_channels,
         in_channels=n_steps_input * num_fields,
         out_channels=1 * num_fields,
